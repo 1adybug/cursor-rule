@@ -59,7 +59,7 @@
     export default Book
     ```
 
-- 你应该按照以下目录结构生成 `React` 组件:
+- 你应该按照以下目录结构生成 `React` 项目:
 
     ```text
     ├── apis/
@@ -107,3 +107,4 @@
 
 - 不需要为类型文件单独生成一个 `types/index.ts` 文件，而是直接在需要使用的地方进行类型声明并且导出
 - 当你使用 `HeroUI` 组件库中的 `Button` 组件时，点击事件请使用 `onPress` 而不是 `onClick`
+- 当你使用`@tanstack/react-query` 的 `useQuery` 时，请使用函数名的烤肉串命名法和参数组成 `key`，例如 `queryKey: ["query-book", queryParams]`
