@@ -122,3 +122,18 @@
 
 - 如果某个方法存在同步和异步两种形式，你应该尽量使用异步形式，而不是同步形式，比如读取文件，你应该尽量使用 `fs/promises` 提供的 `readFile` 方法，而不是 `fs` 提供的 `readFileSync` 方法
 - 在 `Node.js` 中，你应该尽量使用模块的 `Promise` 版本，而不是回调版本，比如读取文件，你应该尽量使用 `fs/promises` 提供的 `readFile` 方法，而不是 `fs` 提供的 `readFile` 方法
+- 涉及到文件读写操作时，尽量使用 `fs` 提供的 `createReadStream` 或者 `createWriteStream` 的方式来实现，而不是一次性读取所有内容
+- `Web API` 中的 `ReadableStream` 可以使用以下方法转换为 `Node.js` 中的 `Readable`:
+
+    ```typescript
+    import { Readable } from "stream"
+    import { ReadableStream } from "stream/web"
+
+    // 这里的 webStream 是 Web API 中的 ReadableStream
+    const webStream = someWebApi()
+
+    // 将 Web API 中的 ReadableStream 转换为 Node.js 中的 Readable
+    const nodeStream = Readable.fromWeb(webStream as ReadableStream)
+    ```
+
+    `Web API` 中的 `WritableStream` 转换为 `Node.js` 中的 `Writable` 的方法同理
