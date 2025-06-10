@@ -109,3 +109,16 @@
 - 当你使用 `HeroUI` 组件库中的 `Button` 组件时，点击事件请使用 `onPress` 而不是 `onClick`
 - 当你使用`@tanstack/react-query` 的 `useQuery` 时，请使用函数名的烤肉串命名法和参数组成 `key`，例如 `queryKey: ["query-book", queryParams]`
 - 函数的参数数量尽量控制在 2 个以内，如果超过 2 个，请使用对象形式的参数，参数类型名称使用函数名的大驼峰 + `Params` 后缀，例如 `QueryBookParams`
+- 尽量直接从模块中导入方法，而不是使用 `默认导出.方法` 的形式
+
+    ```typescript
+    // 你应该直接从 fs/promises 中导入 readFile 方法
+    import { readFile } from "fs/promises"
+
+    // 而不是使用 默认导出.方法 的形式
+    import fs from "fs/promises"
+    fs.readFile
+    ```
+
+- 如果某个方法存在同步和异步两种形式，你应该尽量使用异步形式，而不是同步形式，比如读取文件，你应该尽量使用 `fs/promises` 提供的 `readFile` 方法，而不是 `fs` 提供的 `readFileSync` 方法
+- 在 `Node.js` 中，你应该尽量使用模块的 `Promise` 版本，而不是回调版本，比如读取文件，你应该尽量使用 `fs/promises` 提供的 `readFile` 方法，而不是 `fs` 提供的 `readFile` 方法
