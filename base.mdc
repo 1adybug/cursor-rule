@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # User Rule
 
 - Always respond in 中文
@@ -144,3 +148,32 @@
 - 当我在对话中提出 `no extra` 时，请不要做任何我指定的任务以外的事情，比如进行 lint 检查或者在我指定的区域以外进行任何操作
 - 当使用网络请求时，请使用 `@/utils/request` 中的 `request` 方法，而不是使用 `fetch` 方法，`request` 方法与 `fetch` 的调用方法基本一致
 - 当你需要进行包管理相关的操作时，比如安装、更新、卸载、执行 `package.json` 中的脚本或者 `npx` 执行某个命令时，请检查当前项目中的 `lock` 文件，如果是 `bun.lock`，你应该使用 `bun` 进行包管理，如果是 `package-lock.json`，你应该使用 `npm` 进行包管理，如果是 `yarn.lock`，你应该使用 `yarn` 进行包管理，如果是 `pnpm-lock.yaml`，你应该使用 `pnpm` 进行包管理，如果同时存在多个 `lock` 文件，优先级为 `bun` > `pnpm` > `yarn` > `npm`
+- 请不要使用 `enum` 来声明枚举，而是使用以下方式声明：
+
+    ```typescript
+    export const Gender = {
+        "男": "male",
+        "女": "female",
+    } as const
+
+    export type Gender = (typeof Gender)[keyof typeof Gender]
+    ```
+
+- 在创建 `git` 提交记录，必须使用 `[emoji] [type]: 具体内容`的格式进行提交，以下是预设的 `emoji` 和 `type`：
+
+    ```text
+    ✨ feature: Select when creating new things
+    🐛 fix: Select when fixing a bug
+    📝 docs: Select when editing documentation
+    💻 wip: Select when work is not finished
+    🚄 perfs: Select when working on performances
+    ⏪ rollback:Select when undoing something
+    🔵 other: Select when fixing a bug
+    ```
+
+    当然，你也可以使用你自己的 `emoji` 和 `type`，但是请确保你使用的 `emoji` 和 `type` 是符合上述预设的 `emoji` 和 `type` 的。如果你的提交记录包含了多种内容，你可以使用多行比如：
+
+    ```text
+    ✨ feature: some feature u did
+    🐛 fix: some bug u fixed
+    ```
