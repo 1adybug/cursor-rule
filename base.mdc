@@ -159,11 +159,11 @@ alwaysApply: true
     export type Gender = (typeof Gender)[keyof typeof Gender]
     ```
 
-- 在创建 `git` 提交记录，必须使用 `[emoji] [type]: 具体内容`的格式进行提交，以下是预设的 `emoji` 和 `type`：
+- 在创建 `git` 提交记录，必须使用 `[emoji] [type]: 具体内容`的格式进行提交，具体内容使用中文，以下是预设的 `emoji` 和 `type`：
 
     ```text
     ✨ feature: Select when creating new things
-    🐛 fix: Select when fixing a bug
+    🐞 fix: Select when fixing a bug
     📝 docs: Select when editing documentation
     💻 wip: Select when work is not finished
     🚄 perfs: Select when working on performances
@@ -171,9 +171,9 @@ alwaysApply: true
     🔵 other: Select when fixing a bug
     ```
 
-    当然，你也可以使用你自己的 `emoji` 和 `type`，但是请确保你使用的 `emoji` 和 `type` 是符合上述预设的 `emoji` 和 `type` 的。如果你的提交记录包含了多种内容，你可以使用多行比如：
+    当然，你也可以使用你自己的 `emoji` 和 `type`。如果你的提交记录包含了多种内容，你可以使用多行比如：
 
     ```text
     ✨ feature: some feature u did
-    🐛 fix: some bug u fixed
+    🐞 fix: some bug u fixed
     ```
