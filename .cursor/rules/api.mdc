@@ -86,7 +86,7 @@ alwaysApply: true
 
         ```typescript
         import { useQuery } from "@tanstack/react-query"
-        import { isNonNullable, resolveNull } from "deepsea-tools"
+        import { isNonNullable } from "deepsea-tools"
         import { getUser } from "@/apis/getUser"
 
         export interface UseGetUserParams {
