@@ -13,11 +13,10 @@
     "type": "module",
     "dependencies": {},
     "devDependencies": {
-        "@1adybug/prettier-plugin-sort-imports": "^0.0.16",
+        "@1adybug/prettier": "^0.0.10",
         "@types/node": "^24.10.1",
         "json5": "^2.2.3",
-        "prettier": "^3.6.2",
-        "prettier-plugin-block-padding": "^0.0.9",
+        "prettier": "^3.7.0",
         "typescript": "^5.8.3"
     }
 }
