@@ -134,3 +134,16 @@ alwaysApply: true
     ```
 
 - 如果组件没有 `children`，请使用自闭合标签，例如 `<div />` 而不是 `<div></div>`
+
+- 如果 jsx 中某个元素的属性（非 `children` 属性）的类型为回调函数，并且这个回调函数无法使用一行代码完成，请使用 `function` 关键字声明一个函数，然后传递给该属性，例如：
+
+    ```tsx
+    const App: FC<AppProps> = ({ className, ...rest }) => {
+        function onClick(event: ReactMouseEvent<HTMLDivElement, MouseEvent>) {
+            console.log("onClick")
+            doSomething()
+        }
+
+        return <div onClick={onClick} {...rest}>Hello World!</div>
+    }
+    ```
