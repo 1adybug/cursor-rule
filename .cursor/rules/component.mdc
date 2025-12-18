@@ -147,3 +147,5 @@ alwaysApply: true
         return <div onClick={onClick} {...rest}>Hello World!</div>
     }
     ```
+
+- 如果你使用的是 `shadcn/ui` 的组件，请不要修改 `shadcn/ui` 的原始组件，而是修改 `shadcn/ui` 的组件的 `props`
