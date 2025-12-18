@@ -6,6 +6,8 @@ alwaysApply: true
 
 ## 规则
 
+- 禁止使用 `<></>`，必须使用从 `React` 导入的 `Fragment` 组件
+
 - 你应该将根组件的 `props` 当做基础的 `props` 类型，将当前组件所需的原始数据当做 `data` 属性
 
     ```tsx
