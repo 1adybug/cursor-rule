@@ -99,6 +99,12 @@ alwaysApply: true
 
     export const addUserClient = createRequestFn(addUserAction)
 
+    // 如果这个函数的参数存在 schema，你应该使用以下方式创建 client 函数
+    export const addUserClient = createRequestFn({
+        fn: addUserAction,
+        schema: addUserSchema
+    })
+
     export interface UseAddUserParams<TContext = never> extends Omit<UseMutationOptions<User, Error, AddUserParams, TContext>, "mutationFn"> {}
 
     export function useAddUser<TContext = never>(params: UseAddUserParams<TContext> = {}) {
