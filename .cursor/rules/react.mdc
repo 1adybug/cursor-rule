@@ -10,6 +10,8 @@ alwaysApply: true
 
 - 禁止使用 `<></>`，必须使用从 `React` 导入的 `Fragment` 组件
 
+- 组件的 `props` 书写的优先级为：身份属性 (`ref`、`key`、`id`) > 样式属性 (`className`、`classNames`、`style`、`size` 等等) > 其他属性 > 回调事件 (`onClick`、`onChange` 等等)
+
 - 请始终使用 `on` + 事件名作为事件处理函数的名称，比如 `onClick` 事件处理函数应该命名为 `onClick`，而不是 `handleClick`
 
 - 你应该将根组件的 `props` 当做基础的 `props` 类型，将当前组件所需的原始数据当做 `data` 属性
