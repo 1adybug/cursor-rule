@@ -158,7 +158,9 @@ alwaysApply: true
 
 - 如果你使用的是 `shadcn/ui` 的组件，禁止自动生成组件代码，必须使用命令行工具 `npx shadcn@latest add <component-name>` 来添加组件
 
-- 禁止修改 `shadcn/ui` 添加的原始组件
+- 禁止修改 `shadcn/ui` 添加的原始组件，一般路径为 `@/components/ui/**/*.tsx`
+
+- 如果你使用的是 `ai-elements` 的组件，禁止修改原始组件，一般路径为 `@/components/ai-elements/**/*.tsx`
 
 ## 组件与页面
 
