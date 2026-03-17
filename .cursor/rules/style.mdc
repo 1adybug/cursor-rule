@@ -12,3 +12,4 @@ alwaysApply: true
 
 - 当你使用 `flex` 布局时，对于宽度或者高度需要保持固定的子元素设置 `flex-none`
 - 对于 `React` 组件（也就是非 `div` 等 `html` 元素）的样式，请谨慎使用 `!important` 修改样式，请优先使用 `ConfigProvider` 或者组件暴露的属性（比如 `radius` / `shape`等）修改样式，最后再考虑使用 `!important`
+- 请不要使用模板字符串的形式来实现动态样式，例如 ``className={`w-${width}px`}``，如果你想要实现条件类名，请使用 `deepsea-tools` 中导出的 `clsx` 函数，比如 `clsx("text-base", isPrimary ? "text-primary" : "text-secondary")`
