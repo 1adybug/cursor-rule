@@ -6,6 +6,8 @@ alwaysApply: true
 
 ## 规则
 
+- 项目的 `React` 版本为 `19`，请优先使用 `React 19` 中的新特性
+
 - 生成 `React` 组件时，尽量使用函数式组件，而不是类组件
 
 - 禁止使用 `<></>`，必须使用从 `React` 导入的 `Fragment` 组件
