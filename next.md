@@ -1,6 +1,6 @@
 # Next Rules
 
-针对 `Next.js` 16 项目的规则
+针对 `Next.js` 16 项目的规则，最新的有关 `Next.js` 的文档，你可以在 `node_modules/next/dist/docs/` 中找到
 
 ## server action
 
@@ -38,28 +38,30 @@
     import { prisma } from "@/prisma"
     import { User } from "@/prisma/generated/client"
     import { AddUserParams } from "@/schemas/addUser"
+    import { createSharedFn } from "@/server/createSharedFn"
+    import { isAdmin } from "@/server/isAdmin"
     import { ClientError } from "@/utils/clientError"
 
-    export async function addUser({ username, phone }: AddUserParams) {
-        const count = await prisma.user.count({ where: { username } })
+    export const addUser = createSharedFn({
+        name: "addUser",
+        schema: addUserSchema,
+        // 如果需要对函数调用的用户进行过滤，你可以使用 filter 属性进行过滤
+        filter: isAdmin,
+        // 如果需要将 server action 暴露为 api route，你可以传递 route 属性
+        route: {
+            // pathname 就是 api route 的路径
+            pathname: "/geclaw-resource",
+            // bodyType 就是函数接收的参数类型，可以传递 "json" 和 "formData"，默认为 "json"，应该与实际的函数参数保持一致
+            bodyType: "json",
+        },
+    })(async function addUser({ name, nickname, phoneNumber, role, image }) {
+        const count = await prisma.user.count({ where: { name } })
 
         // 如果函数内部需要抛出错误，请使用 `ClientError` 类，它的使用方法与 `Error` 类一致，同时支持更多用法，详细请参考 `@/utils/clientError` 文件
         if (count > 0) throw new ClientError("用户名已存在")
 
-        const count2 = await prisma.user.count({ where: { phone } })
-        if (count2 > 0) throw new ClientError("手机号已存在")
-        const user = await prisma.user.create({ data: { username, phone } })
         return user
-    }
-
-    // 如果这个 server action 只允许特定的用户指定，可以为 @/shared 目录下的响应函数添加一个 `filter` 属性
-    // `filter` 属性接受两种类型，一种是 `boolean` 类型，一种是 `(user: User) => boolean` 函数类型
-    // 当你传入 `boolean` 类型时， `true` 代表只有登录且未被禁用的用户才能访问，`false` 代表不做任何限制，包括未登录用户
-    // 当你传入 `(user: User) => boolean` 函数类型时，函数返回 `true` 代表用户可以访问，返回 `false` 代表用户不能访问
-    // filter 属性默认值为 `true`，代表只有登录且未被禁用的用户才能访问
-    addUser.filter = function filter(user: User) {
-        return user.role === "ADMIN"
-    }
+    })
     ```
 
 3. 在 `@/actions` 目录下创建一个名为 `addUser.ts` 的文件，它的内容应该如下：
@@ -67,15 +69,10 @@
     ```typescript
     "use server"
 
-    import { addUserSchema } from "@/schemas/addUser"
     import { createResponseFn } from "@/server/createResponseFn"
     import { addUser } from "@/shared/addUser"
 
-    export const addUserAction = createResponseFn({
-        fn: addUser,
-        schema: addUserSchema,
-        name: "addUser",
-    })
+    export const addUserAction = createResponseFn(addUser)
     ```
 
 4. 在 `@/presets` 目录下创建一个名为 `createUseAddUser.ts` 的文件，它的内容应该如下：
@@ -84,7 +81,7 @@
     import { useId } from "react"
 
     import { withUseMutationDefaults } from "soda-tanstack-query"
-    import { addUser } from "@/shared/addUser"
+    import type { addUser } from "@/shared/addUser"
 
     export const createUseAddUser = withUseMutationDefaults<typeof addUser>(() => {
         const key = useId()
@@ -177,30 +174,7 @@ export const usernameParser = getParser(usernameSchema)
 
 `@/utils` 目录下的文件必须只能是客户端可以访问的工具函数，或者客户端和服务器都可以访问的工具函数，如果一个工具函数只能在服务器访问，或者不能暴露给客户端，请将它放在 `@/server` 目录下
 
-## Middleware
-
-在 `Next.js` 16 中，`middleware.ts` 已经被弃用，请使用 `proxy.ts` 文件来实现中间件功能，并且导出的函数名必须为 `proxy`，例如：
-
-```typescript
-import { NextRequest, NextResponse } from "next/server"
-
-export async function proxy(request: NextRequest) {
-    const requestHeaders = new Headers(request.headers)
-    requestHeaders.set("current-url", request.url)
-
-    const response = NextResponse.next({
-        request: {
-            headers: requestHeaders,
-        },
-    })
-
-    return response
-}
-```
-
 ## Api Route
 
-- 只有当你的某个功能必须通过 `HTTP` 接口的方式才能实现时，比如需要允许第三方调用的接口或者 `server action` 无法满足需求时，你才需要创建一个 `api route`，否则你应该创建一个 `server action`
-- 你依然需要遵守 `server action` 的规则，核心的实现逻辑与 `server action` 一致，比如 `schema` （负责校验数据）的创建、`shared` 函数（负责核心逻辑）的创建等，这些规则同样适用于 `api route`
-- 所以 `api route` 的创建规则与 `server action` 的创建规则一致，你只需要按照 `server action` 的创建规则创建即可，唯一不同的地方是，你需要将 `api route` 按照 Next.js 的 `api route` 规则创建，而不是 `@/actions` 目录下
-- 当然如果这个功能可以通过 `server action` 实现并且是给内部使用的，你也可以同时按照 `server action` 的创建规则创建一个 `server action`，这样 `server action` 和 `api route` 都可以使用，但是 `server action` 是给内部使用的，而 `api route` 是给外部使用的
+- 只有当你的某个功能必须通过 `HTTP` 接口的方式才能实现时，比如需要允许第三方调用的接口或者 `server action` 无法满足需求时，你才需要创建一个 `api route`
+- 当你需要创建一个 `api route` 时，你只需要创建一个 `server action`，然后传递 `route` 属性即可

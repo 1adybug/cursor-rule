@@ -47,7 +47,7 @@
 
     ```typescript
     // 而不是使用 默认导出.方法 的形式
-    import fs from "fs/promises"
+    import fs from "node:fs/promises"
 
     fs.readFile
     ```
@@ -58,8 +58,8 @@
 - `Web API` 中的 `ReadableStream` 可以使用以下方法转换为 `Node.js` 中的 `Readable`:
 
     ```typescript
-    import { Readable } from "stream"
-    import { ReadableStream } from "stream/web"
+    import { Readable } from "node:stream"
+    import { ReadableStream } from "node:stream/web"
 
     // 这里的 webStream 是 Web API 中的 ReadableStream
     const webStream = someWebApi()
