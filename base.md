@@ -1,7 +1,3 @@
----
-alwaysApply: true
----
-
 # Base Rules
 
 - 永远使用中文回复

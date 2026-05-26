@@ -1,7 +1,3 @@
----
-alwaysApply: true
----
-
 # API Rules
 
 当我将 api 文档发送给你时，请按照以下规则生成代码：

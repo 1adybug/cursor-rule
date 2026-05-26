@@ -1,7 +1,3 @@
----
-alwaysApply: true
----
-
 # Style Rules
 
 - 页面的 CSS 样式你应该尽量通过以下两种方式实现：

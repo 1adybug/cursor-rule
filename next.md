@@ -1,7 +1,3 @@
----
-alwaysApply: true
----
-
 # Next Rules
 
 针对 `Next.js` 16 项目的规则
