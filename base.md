@@ -85,23 +85,20 @@
     export type Gender = (typeof Gender)[keyof typeof Gender]
     ```
 
-- 在创建 `git` 提交记录，必须使用 `[emoji] [type]: 具体内容`的格式进行提交，具体内容使用中文，以下是预设的 `emoji` 和 `type`：
+- 在创建 `git` 提交记录，必须使用 `[type]: 具体内容` 的格式进行提交
 
     ```text
-    ✨ feature: Select when creating new things
-    🐞 fix: Select when fixing a bug
-    📝 docs: Select when editing documentation
-    💻 wip: Select when work is not finished
-    🚄 perfs: Select when working on performances
-    ⏪ rollback:Select when undoing something
-    🔵 other: Select when fixing a bug
+    feat: Select when creating new things
+    fix: Select when fixing a bug
+    docs: Select when editing documentation
+    ...
     ```
 
-    你必须使用预设的 `emoji` 和 `type`。如果你的提交记录包含了多种内容，你可以使用多行比如：
+    在 monorepo 中，必须使用 `[type](package): 具体内容` 的格式进行提交：
 
     ```text
-    ✨ feature: some feature u did
-    🐞 fix: some bug u fixed
+    feat(wdp-react): add some feature
+    fix(deepsea-tools): fix some bug
     ```
 
 - 除了 `React` 组件和页面以外所有的导出必须使用 `export` 关键字导出，不要使用 `export default` 关键字导出
