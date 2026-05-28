@@ -10,3 +10,5 @@
 - 请不要使用模板字符串的形式来实现动态样式，例如 ``className={`w-${width}px`}``，如果你想要实现条件类名，请使用 `deepsea-tools` 中导出的 `clsx` 函数，比如 `clsx("text-base", isPrimary ? "text-primary" : "text-secondary")`
 
 - 如果某个容器在不同状态下有时会出现纵向滚动条，有时不会，导致右侧按钮或内容边界横向抖动。请用 `CSS` 动态 `padding` 解决，不要硬编码滚动条宽度。做法是：先确定内容区域在没有滚动条时的理论宽度，例如整个窗口宽度减去左侧固定侧边栏宽度：`calc(100vw - 84px)`。然后设置左侧 `padding` 为基础值，比如 `28px`；右侧 `padding` 设置为基础值减去“理论宽度和当前容器实际宽度的差值”： `padding-left: 28px; padding-right: calc(28px - ((100vw - 84px) - 100%));` 其中 `100%` 是当前内容容器实际可用宽度。没有滚动条时差值为 `0`；有滚动条时差值等于滚动条占用宽度，从而自动抵消滚动条造成的横向偏移。响应式场景下，如果侧边栏宽度或基础 `padding` 改变，也要在对应断点同步更新这个公式。
+
+- 对于 `Ant Design` 中的按钮，尽量使用 `color` + `variant` 的组合来实现不通样式，对于 `color` 不是 `default` 的按钮，`variant` 尽量不要使用 `outlined`
