@@ -178,3 +178,7 @@ export const usernameParser = getParser(usernameSchema)
 
 - 只有当你的某个功能必须通过 `HTTP` 接口的方式才能实现时，比如需要允许第三方调用的接口或者 `server action` 无法满足需求时，你才需要创建一个 `api route`
 - 当你需要创建一个 `api route` 时，你只需要创建一个 `server action`，然后传递 `route` 属性即可
+- 只有成功响应不是 JSON 时，才允许直接定义独立 `route.ts`
+- 如果成功响应本质是 JSON 数据，必须优先走 `shared -> action/route -> preset -> hooks/apis` 这套规范
+- 文件下载、二进制流、图片流、上游流式透传等场景，可以保留独立 `route.ts`
+- 即使保留独立 `route.ts`，核心业务逻辑也仍然应该尽量复用 `shared`
