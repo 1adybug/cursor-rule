@@ -7,7 +7,6 @@
 - 对于 `Electron` 开发的应用，不要尝试在浏览器中加载和验证
 - 尽量使用 `interface` 而不是 `type`，函数类型除外
 - 所有的类型定义都使用 `export` 导出
-- 如果某一个属性的类型是 `[key]: someType | null`，请将它改写为 `[key]?: someType`，尽量不要使用 `null` 类型
 - 禁止使用字面量类型，必须使用独立的类型定义，比如:
 
     ```typescript
