@@ -1,194 +1,205 @@
 # React Rules
 
-## 规则
+## 基本原则
 
-- 项目的 `React` 版本为 `19`，请优先使用 `React 19` 中的新特性：
-    - 使用 `Actions` 处理异步数据变更、提交状态、错误处理、乐观更新与表单提交，优先将异步提交函数命名为 `xxxAction`
-    - 表单提交优先使用 `<form action={xxxAction}>`、元素级 `formAction`、`useActionState`、`useFormStatus` 与 `requestFormReset`
-    - 需要乐观 UI 时优先使用 `useOptimistic`
-    - 需要在渲染阶段读取 `Promise` 或条件读取 `Context` 时优先使用 `use`，但不要在渲染期间创建未缓存的 `Promise`
-    - 函数组件需要接收 `ref` 时优先使用 `ref` 作为 `props`，新组件不要再优先使用 `forwardRef`
-    - 新增 `Context` Provider 时优先使用 `<SomeContext value={value}>`，不要优先使用 `<SomeContext.Provider>`
-    - 回调 `ref` 需要清理逻辑时可以返回清理函数；没有清理逻辑时不要使用隐式返回
-    - 需要初始占位值的延迟渲染时优先使用 `useDeferredValue(value, initialValue)`
-    - 页面级元数据优先直接在组件中渲染 `<title>`、`<meta>` 与 `<link>`，让 `React` 自动提升到 `<head>`
-    - 组件依赖样式表时可以渲染 `<link rel="stylesheet" precedence="...">` 或 `<style precedence="...">`，让 `React` 管理顺序、加载与去重
-    - 组件依赖异步脚本时可以直接渲染 `<script async src="...">`，让 `React` 管理提升与去重
-    - 需要优化资源加载时优先使用 `react-dom` 中的 `prefetchDNS`、`preconnect`、`preload` 与 `preinit`
-    - 静态站点生成优先使用 `react-dom/static` 中的 `prerender` 与 `prerenderToNodeStream`
-    - 框架支持时优先考虑 `React Server Components` 与 `Server Actions`，其中 `"use server"` 仅用于 `Server Actions`
-    - 需要保留隐藏页面状态、预渲染下一步界面或降低隐藏内容优先级时，可以使用 `Activity`
-    - `Effect` 中由外部系统触发、但需要读取最新 `props` 或 `state` 的事件逻辑，优先使用 `useEffectEvent`
-    - `React Server Components` 中需要在缓存生命周期结束时中止或清理异步工作，可以使用 `cacheSignal`
-    - 需要 Web Components 时可以直接使用 `Custom Elements`，`React 19` 已支持属性与 SSR 行为
-
-- 生成 `React` 组件时，尽量使用函数式组件，而不是类组件
-
-- 禁止使用 `<></>`，必须使用从 `React` 导入的 `Fragment` 组件
-
-- 组件的 `props` 书写的优先级为：身份属性 (`ref`、`key`、`id`) > 样式属性 (`className`、`classNames`、`style`、`size` 等等) > 其他属性 (`value`、`defaultValue` 等等) > 回调事件 (`onClick`、`onChange` 等等)
-
-- 请始终使用 `on` + 事件名作为事件处理函数的名称，比如 `onClick` 事件处理函数应该命名为 `onClick`，而不是 `handleClick`
-
-- 你应该将根组件的 `props` 当做基础的 `props` 类型，将当前组件所需的原始数据当做 `data` 属性
+- 项目的 `React` 版本为 `19`，生成代码时优先使用 `React 19` 的稳定能力与推荐写法。
+- 组件优先使用函数式组件，不使用类组件。
+- 如果组件内部没有逻辑，只有一个返回节点，优先使用箭头函数隐式返回，不要额外写 `return`。
+- 禁止使用 `<></>`，必须从 `react` 中导入并使用 `Fragment`。
+- 如果组件没有 `children`，使用自闭合标签，例如 `<div />`，不要写成 `<div></div>`。
+- `React` 类型与全局类型或项目内命名冲突时，使用别名导入：
 
     ```tsx
-    import { ComponentProps, FC } from "react"
-
-    import { clsx, StrictOmit } from "deepsea-tools"
-
-    export interface Book {
-        id: string
-        name: string
-        isbn: string
-    }
-
-    export interface BookProps extends StrictOmit<ComponentProps<"div">, "children"> {
-        data?: Book
-    }
-
-    const Book: FC<BookProps> = ({ className, data, ...rest }) => (
-        <div className={clsx("container", className)} {...rest}>
-            <div>{data?.name}</div>
-            <div>{data?.isbn}</div>
-        </div>
-    )
-
-    export default Book
+    import { MouseEvent as ReactMouseEvent } from "react"
     ```
 
-    因为 `Book` 组件的根元素是 `div`，所以 `BookProps` 类型应该继承自 `StrictOmit<ComponentProps<"div">, "children">`，如果 `Book` 组件的根组件不是 `html` 元素，例如 `Container` 组件，则应该继承自 `StrictOmit<ComponentProps<typeof Container>, "children">`，或者如果存在 `ContainerProps` 类型，则应该继承自 `StrictOmit<ContainerProps, "children">`
+- 变量别名使用小驼峰命名，类型别名使用大驼峰命名。
 
-    `data` 属性是指整个项目中某种数据的原始类型，例如从 `queryBook` 接口等 api 函数中获取到的数据，这时 `data` 的类型就是 `Book` 类型
+## React 19
 
-- 尽量直接在函数式组件的参数中解构 `props`，获取需要使用的属性，将剩余的属性作为 `rest` 属性
+- 使用 `Actions` 处理异步数据变更、提交状态、错误处理、乐观更新与表单提交；异步提交函数优先命名为 `xxxAction`。
+- 表单提交优先使用 `<form action={xxxAction}>`、元素级 `formAction`、`useActionState`、`useFormStatus` 与 `requestFormReset`。
+- 需要乐观 UI 时优先使用 `useOptimistic`。
+- 需要在渲染阶段读取 `Promise` 或条件读取 `Context` 时优先使用 `use`，但不要在渲染期间创建未缓存的 `Promise`。
+- 函数组件需要接收 `ref` 时，优先将 `ref` 作为普通 `props` 接收，新组件不要优先使用 `forwardRef`。
+- 新增 `Context` Provider 时优先使用 `<SomeContext value={value}>`，不要优先使用 `<SomeContext.Provider>`。
+- 回调 `ref` 需要清理逻辑时可以返回清理函数；没有清理逻辑时不要使用隐式返回。
+- 需要初始占位值的延迟渲染时优先使用 `useDeferredValue(value, initialValue)`。
+- 页面级元数据优先直接在组件中渲染 `<title>`、`<meta>` 与 `<link>`，让 `React` 自动提升到 `<head>`。
+- 组件依赖样式表时可以渲染 `<link rel="stylesheet" precedence="...">` 或 `<style precedence="...">`，让 `React` 管理顺序、加载与去重。
+- 组件依赖异步脚本时可以直接渲染 `<script async src="...">`，让 `React` 管理提升与去重。
+- 需要优化资源加载时，优先使用 `react-dom` 中的 `prefetchDNS`、`preconnect`、`preload` 与 `preinit`。
+- 静态站点生成优先使用 `react-dom/static` 中的 `prerender` 与 `prerenderToNodeStream`。
+- 框架支持时优先考虑 `React Server Components` 与 `Server Actions`，其中 `"use server"` 仅用于 `Server Actions`。
+- 需要保留隐藏页面状态、预渲染下一步界面或降低隐藏内容优先级时，可以使用 `Activity`。
+- `Effect` 中由外部系统触发、但需要读取最新 `props` 或 `state` 的事件逻辑，优先使用 `useEffectEvent`。
+- `React Server Components` 中需要在缓存生命周期结束时中止或清理异步工作，可以使用 `cacheSignal`。
+- 需要 Web Components 时可以直接使用 `Custom Elements`，`React 19` 已支持属性与 SSR 行为。
 
-- 如果你需要根组件设置 `className`，请使用从 `deepsea-tools` 中导入的 `clsx` 函数来合并 `className`，例如上方的：
+## Props 设计
 
-    ```tsx
+- 组件的根元素或根组件类型，是当前组件 `props` 的基础类型。
+- 当前组件所需的原始业务数据统一使用 `data` 属性传入。
+- `data` 指整个项目中的原始数据类型，例如从 `queryBook` 接口获取到的 `Book`。
+- 没有特殊原因时，不要把业务数据拆成大量平铺属性传入组件。
+- 尽量直接在函数式组件参数中解构 `props`，并将剩余属性收集为 `rest`。
+- 根元素是 HTML 元素时，继承对应元素类型，例如 `StrictOmit<ComponentProps<"div">, "children">`。
+- 根组件是其他组件时，继承 `StrictOmit<ComponentProps<typeof Component>, "children">`；如果已有明确的 `ComponentProps` 类型，则优先继承该类型。
+
+```tsx
+import { ComponentProps, FC } from "react"
+
+import { clsx, StrictOmit } from "deepsea-tools"
+
+export interface Book {
+    id: string
+    name: string
+    isbn: string
+}
+
+export interface BookProps extends StrictOmit<ComponentProps<"div">, "children"> {
+    data?: Book
+}
+
+export const Book: FC<BookProps> = ({ className, data, ...rest }) => (
+    <div className={clsx("container", className)} {...rest}>
+        <div>{data?.name}</div>
+        <div>{data?.isbn}</div>
+    </div>
+)
+```
+
+## JSX 属性顺序
+
+组件的 `props` 书写顺序如下：
+
+1. 身份属性：`ref`、`key`、`id`。
+2. 样式属性：`className`、`classNames`、`style`、`size` 等。
+3. 数据属性：`value`、`defaultValue`、`data` 等。
+4. 回调事件：`onClick`、`onChange` 等。
+5. 透传属性：`...rest`。
+
+示例：
+
+```tsx
+<OtherInput ref={ref} className={className} value={value} onValueChange={onValueChange} {...rest} />
+```
+
+## className
+
+- 如果需要给根组件设置 `className`，使用 `deepsea-tools` 中的 `clsx` 合并内置类名与外部类名。
+- 不要手写字符串拼接类名，条件类名也使用 `clsx`。
+
+```tsx
+return (
+    <div className={clsx("container", className)} {...rest}>
+        ...
+    </div>
+)
+```
+
+## 事件处理
+
+- 事件处理函数使用 `on` + 事件名命名，例如 `onClick`，不要命名为 `handleClick`。
+- 如果组件内部事件与 `props` 中的事件同名，将外部事件重命名为下划线前缀，内部逻辑优先执行，然后调用外部事件。
+
+```tsx
+import { ComponentProps, FC, MouseEvent as ReactMouseEvent } from "react"
+
+import { StrictOmit } from "deepsea-tools"
+
+export interface AppProps extends StrictOmit<ComponentProps<"div">, "children"> {}
+
+export const App: FC<AppProps> = ({ onClick: _onClick, ...rest }) => {
+    function onClick(event: ReactMouseEvent<HTMLDivElement, MouseEvent>) {
+        console.log("onClick")
+
+        _onClick?.(event)
+    }
+
     return (
-        <div className={clsx("container", className)} {...rest}>
-            ...
-        </div>
-    )
-    ```
-
-- 如果组件是一个受控组件，请使用 `value` 和 `onValueChange` 来实现受控组件，这两个属性都应该是可选，并且在组件内部，你应该使用从 `soda-hooks` 中导入的 `useInputState` 的钩子来实现内部状态与外部状态的同步，例如：
-
-    ```tsx
-    import { ComponentProps, FC } from "react"
-
-    import { StrictOmit } from "deepsea-tools"
-
-    export interface MyInputProps extends StrictOmit<ComponentProps<typeof OtherInput>, "value" | "onValueChange"> {
-        value?: string
-        onValueChange?: (value: string) => void
-    }
-
-    const MyInput: FC<MyInputProps> = ({ value: _value, onValueChange: _onValueChange, ...rest }) => {
-        const [value, setValue] = useInputState(_value)
-
-        function onValueChange(value: string) {
-            setValue(value)
-            _onValueChange?.(value)
-        }
-
-        return <OtherInput value={value} onValueChange={onValueChange} {...rest} />
-    }
-
-    export default MyInput
-    ```
-
-- 如果你需要使用 `React` 中的某个导入，请使用 `import { xxx } from "react"` 而不是 `React.xxx` 的形式，如果已经存在同名的变量或者类型，请使用 `import { xxx as reactXxx } from "react"`，变量使用小驼峰命名，类型使用大驼峰命名
-
-- 如果你需要在组件内部添加一个事件处理函数，而组件的 `props` 中存在同名的事件处理函数，你应该这样处理：
-
-    ```tsx
-    // 因为 global 中存在 MouseEvent 类型，与 react 中的 MouseEvent 类型冲突，所以需要将 react 中的 MouseEvent 类型重命名为 ReactMouseEvent
-    import { ComponentProps, FC, MouseEvent as ReactMouseEvent } from "react"
-
-    import { StrictOmit } from "deepsea-tools"
-
-    export interface AppProps extends StrictOmit<ComponentProps<"div">, "children"> {}
-
-    // 将 props 中的同名事件处理函数加一个下划线前缀
-    const App: FC<AppProps> = ({ onClick: _onClick, ...rest }) => {
-        function onClick(event: ReactMouseEvent<HTMLDivElement, MouseEvent>) {
-            // 优先处理内部逻辑
-            console.log("onClick")
-
-            // 然后调用外部的事件处理函数
-            _onClick?.(event)
-        }
-
-        return (
-            <div onClick={onClick} {...rest}>
-                Hello World!
-            </div>
-        )
-    }
-
-    export default App
-    ```
-
-- 如果你的组件内部没有任何逻辑，只有 `return` 一个组件，请直接返回该组件，不要使用 `return` 关键字，例如：
-
-    ```tsx
-    const App: FC<AppProps> = ({ className, ...rest }) => (
-        <div className={clsx("container", className)} {...rest}>
+        <div onClick={onClick} {...rest}>
             Hello World!
         </div>
     )
-    ```
+}
+```
 
-- 当你在组件内部需要获取根组件的 `ref`，而 `props` 中也有 `ref` 属性时，你应该这样处理：
+## 受控组件
 
-    ```tsx
-    const App: FC<AppProps> = ({ ref, ...rest }) => {
-        const container = useRef<HTMLDivElement>(null)
+- 受控组件使用 `value` 和 `onValueChange` 实现。
+- `value` 和 `onValueChange` 都应该是可选属性。
+- 组件内部使用 `soda-hooks` 中的 `useInputState` 同步内部状态与外部状态。
+- 内部更新状态后，再调用外部传入的 `onValueChange`。
 
-        useImperativeHandle(ref, () => container.current!)
+```tsx
+import { ComponentProps, FC } from "react"
 
-        return (
-            <div ref={container} {...rest}>
-                Hello World!
-            </div>
-        )
+import { StrictOmit } from "deepsea-tools"
+import { useInputState } from "soda-hooks"
+
+export interface MyInputProps extends StrictOmit<ComponentProps<typeof OtherInput>, "value" | "onValueChange"> {
+    value?: string
+    onValueChange?: (value: string) => void
+}
+
+export const MyInput: FC<MyInputProps> = ({ value: _value, onValueChange: _onValueChange, ...rest }) => {
+    const [value, setValue] = useInputState(_value)
+
+    function onValueChange(value: string) {
+        setValue(value)
+        _onValueChange?.(value)
     }
-    ```
 
-- 如果组件没有 `children`，请使用自闭合标签，例如 `<div />` 而不是 `<div></div>`
+    return <OtherInput value={value} onValueChange={onValueChange} {...rest} />
+}
+```
 
-- 如果 jsx 中某个元素的属性（非 `children` 属性）的类型为回调函数，并且这个回调函数无法使用一行代码完成，请使用 `function` 关键字声明一个函数，然后传递给该属性，例如：
+## ref 处理
 
-    ```tsx
-    const App: FC<AppProps> = ({ className, ...rest }) => {
-        function onClick(event: ReactMouseEvent<HTMLDivElement, MouseEvent>) {
-            console.log("onClick")
-            doSomething()
-        }
+- 需要接收外部 `ref` 时，优先直接从 `props` 中解构 `ref`。
+- 如果组件内部也需要根节点引用，使用内部 `useRef` 保存节点，再通过 `useImperativeHandle` 暴露给外部 `ref`。
 
-        return (
-            <div onClick={onClick} {...rest}>
-                Hello World!
-            </div>
-        )
-    }
-    ```
+```tsx
+import { ComponentProps, FC, useImperativeHandle, useRef } from "react"
 
-- 如果你使用的是 `shadcn/ui` 的组件，禁止自动生成组件代码，必须使用命令行工具 `npx shadcn@latest add <component-name>` 来添加组件
+import { StrictOmit } from "deepsea-tools"
 
-- 禁止修改 `shadcn/ui` 添加的原始组件，一般路径为 `@/components/ui/**/*.tsx`
+export interface AppProps extends StrictOmit<ComponentProps<"div">, "children"> {}
 
-- 如果你使用的是 `ai-elements` 的组件，禁止修改原始组件，一般路径为 `@/components/ai-elements/**/*.tsx`
+export const App: FC<AppProps> = ({ ref, ...rest }) => {
+    const container = useRef<HTMLDivElement>(null)
+
+    useImperativeHandle(ref, () => container.current!)
+
+    return (
+        <div ref={container} {...rest}>
+            Hello World!
+        </div>
+    )
+}
+```
 
 ## 组件与页面
 
-请遵循以下规则生成组件或页面，并在新增时考虑复用与抽取：
+生成组件或页面时，遵循以下规则：
 
-1. 先分析页面结构，识别重复的 UI 片段与逻辑，并判断是否值得抽取。不要为了抽取而抽取，优先考虑维护成本。
-2. 抽取的组件应该放在公共的 `@/components` 目录下，工具函数应该放在公共的 `@/utils` 目录下，禁止放在其他目录下。
-3. 新增组件或页面前，检查已有目录（尤其是 `@/components` 与 `@/utils`）是否已有可复用实现，优先复用而非重复创建。
-4. 抽取时保持原有 UI 风格与交互一致，避免引入不必要的样式或行为变化。
-5. 组件拆分要能提升可读性与可测试性；若拆分后跨文件沟通成本增加，则保留在原文件。
-6. 对抽取出的组件与工具，提供清晰的 props 或函数签名与命名，便于后续维护与扩展。
+1. 先分析页面结构，识别重复的 UI 片段与逻辑，并判断是否值得抽取。
+2. 不要为了抽取而抽取，优先考虑维护成本、可读性与测试价值。
+3. 新增组件或页面前，检查已有目录，尤其是 `@/components` 与 `@/utils`，优先复用已有实现。
+4. 抽取的公共组件放在 `@/components` 目录下，公共工具函数放在 `@/utils` 目录下。
+5. 禁止把公共组件或公共工具函数随意放入业务页面目录。
+6. 抽取时保持原有 UI 风格与交互一致，避免引入不必要的样式或行为变化。
+7. 组件拆分应提升可读性与可测试性；如果拆分后跨文件沟通成本明显增加，则保留在原文件。
+8. 抽取出的组件与工具必须提供清晰的 `props`、函数签名与命名，便于维护与扩展。
+
+## 第三方组件
+
+- 如果使用 `shadcn/ui` 组件，禁止自动生成组件代码，必须使用命令行工具添加：
+
+    ```bash
+    npx shadcn@latest add <component-name>
+    ```
+
+- 禁止修改 `shadcn/ui` 添加的原始组件，一般路径为 `@/components/ui/**/*.tsx`。
+- 如果使用 `ai-elements` 组件，禁止修改原始组件，一般路径为 `@/components/ai-elements/**/*.tsx`。

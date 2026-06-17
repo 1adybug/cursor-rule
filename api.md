@@ -1,125 +1,177 @@
 # API Rules
 
-当我将 api 文档发送给你时，请按照以下规则生成代码：
+当用户发送 API 文档并要求生成代码时，按照以下规则创建 `@/apis` 与 `@/hooks` 相关代码。
 
-1. 使用 4 个空格进行缩进，尾部保留一个空行
-2. 函数名与文件名保持一致
-3. 如果 api 函数需要传递参数，请使用 `params` 作为参数名，请使用函数名 + Params 作为参数类型，比如 `async function queryUser(params: QueryUserParams)`
-4. api 函数的请求方法始终使用 `@/utils/request` 中的 `request` 函数，它的使用方法与 `fetch` 大致一致
-5. 如果 api 函数需要在 `body` 中传递参数，请直接将 `params` 传递给 `body`，不需要进行 `JSON.stringify`，不需要设置 `Content-Type` 为 `application/json`，不需要设置 `method` 为 `POST`，`request` 函数内部会自动处理
-6. 如果 api 函数需要在 `query` 中传递参数，请直接将 `params` 传递给 `search` 属性，不需要进行其他处理
-7. 如果 api 函数的参数是一个对象，并且这个对象的所有属性都是可选的，请给 `params` 后面添加 `= {}` 的默认值，比如 `async function queryUser(params: QueryUserParams = {})`
-8. 如果 api 函数的返回值是一个分页数据，使用 `deepsea-tools` 中的 `Page` 泛型，它的泛型参数为每一项的类型，比如 `Page<User>`
-9. 请将 api 函数的返回值的类型传递给 `request` 函数的泛型参数，比如 `const response = await request<Page<User>>("/user/query", { search: params })`
-10. 如果 api 函数的返回值是一个对象，对于每一个属性，如果没有文档明确说明是可选的，请不要使用 `?` 将它标记为可选
-11. 请不要直接返回 `request` 函数的返回值，而是先传递给 `response` 变量，然后返回 `response` 变量，比如：
+## 基本原则
 
-    ```typescript
+- 只根据 API 文档中明确提供的信息生成代码，不要臆造字段、枚举值、接口路径或响应结构。
+- 如果文档缺少请求路径、请求方法、参数位置、响应结构等关键信息，应先指出缺失点；能够根据上下文安全推断时，可以说明推断依据后继续生成。
+- 使用 4 个空格缩进，文件尾部保留一个空行。
+- API 函数的文件名、函数名与接口语义保持一致，例如 `queryUser.ts` 导出 `queryUser`。
+- API 函数是顶层可复用函数，按照 `base.md` 的函数声明规则使用 `function` 声明。
+- 生成新文件前，优先检查已有 `@/apis`、`@/hooks` 中是否存在可复用类型、枚举或函数，避免重复定义。
+
+## 参数命名
+
+- 对象参数统一命名为 `params`，类型命名为函数名的大驼峰形式加 `Params` 后缀，例如 `QueryUserParams`。
+- 如果参数对象的所有属性都是可选的，给 `params` 添加默认值 `= {}`。
+- 获取详情接口如果只接收一个唯一标识符，可以直接使用标识符参数，例如 `id: User["id"]`，不强制包装为对象。
+- 请求参数较复杂时，优先保持文档字段名，不要为了前端语义擅自改名。
+
+```typescript
+export async function queryUser(params: QueryUserParams = {}) {
     const response = await request<Page<User>>("/user/query", { search: params })
     return response
-    ```
+}
 
-12. 常规的 api 函数为 5 种类型，以 `User` 为例，它们分别是：
-    - 查询用户列表，请求参数为 `QueryUserParams`，返回值为 `Page<User>`
-    - 新增用户，请求参数为 `AddUserParams`，返回值为 `User`
-    - 更新用户，请求参数为 `UpdateUserParams`，返回值为 `User`
-    - 删除用户，请求参数为 `DeleteUserParams`，返回值为 `User`，请求方法为 `DELETE`
-    - 获取用户详情，请求参数为 `User` 类型中的唯一标识符字段的类型，字段一般为 `id`，类型一般为 `string` | `number`，返回值为 `User`
-13. 新增参数和更新参数一般与原类型高度一致，请尽可能复用原类型，以 `User` 为例，新增参数为 `AddUserParams`，更新参数为 `UpdateUserParams`，尽可能 `extends` 原类型中可以复用的属性，灵活使用 `Omit` 和 `Pick` 等工具类型：
+export async function getUser(id: User["id"]) {
+    const response = await request<User>(`/user/${id}`)
+    return response
+}
+```
 
-    ```typescript
-    // 你可以移除不需要的属性，比如 `id`
-    interface AddUserParams extends Omit<User, "id" | "createdAt" | "updatedAt"> {}
+## 类型建模
 
-    // 更新参数可能与原类型高度一致，也可能不完全一致，请灵活处理
-    interface UpdateUserParams extends User {}
-    ```
+- 如果响应是分页数据，使用 `deepsea-tools` 中的 `Page` 泛型，例如 `Page<User>`。
+- 如果响应是对象，除非文档明确说明字段可选，否则不要使用 `?` 标记可选。
+- 新增参数与更新参数通常应复用原始模型类型，灵活使用 `Omit`、`Pick`、`Partial` 等工具类型。
+- 如果字段说明中体现了枚举含义，按照 `base.md` 的枚举规则建模，并用该枚举类型替代原先的 `string` 或 `number` 类型。
+- 枚举对象的 `key` 使用中文说明，`value` 使用文档取值，`key` 的长度尽量保持一致。
+- 类型、枚举和接口函数应尽可能复用已有定义；如果两个接口文件之间关系明确，直接导入已有类型，不要重复声明。
 
-14. 如果某个类型的说明中体现了它是一个枚举类型，请使用枚举类型代替原先的 `string` 或者 `number` 类型，枚举类型的 `key` 使用它的中文说明，`value` 使用它的取值，`key` 的长度尽量保持一致，比如 api 文档中 `userStatus` 的属性是 `类型：int，说明：用户状态，取值：1-正常，0-禁用`，则可以这样定义：
+```typescript
+export interface User {
+    id: string
+    name: string
+    status: UserStatus
+    createdAt: string
+    updatedAt: string
+}
 
-    ```typescript
-    export const UserStatus = {
-        正常: 1,
-        禁用: 0,
-    } as const
+export interface AddUserParams extends Omit<User, "id" | "createdAt" | "updatedAt"> {}
 
-    export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus]
+export interface UpdateUserParams extends User {}
+```
 
-    export interface User {
-        // ...
-        // 使用 UserStatus 类型代替原先的 `string` 或者 `number` 类型
-        status: UserStatus
-        // ...
+## 请求实现
+
+- API 请求始终使用 `@/utils/request` 中的 `request` 函数。
+- 将返回值类型传给 `request` 的泛型参数。
+- 不要直接返回 `request(...)`，应先赋值给 `response`，再返回 `response`。
+- Query 参数传给 `search` 属性，不需要额外拼接 URL。
+- Body 参数传给 `body` 属性，不需要 `JSON.stringify`，不需要手动设置 `Content-Type: application/json`。
+- Body 请求如果文档没有特殊要求，不需要显式设置 `method: "POST"`，由 `request` 内部处理。
+- 如果文档明确要求 `DELETE`、`PUT`、`PATCH` 等方法，必须显式传递 `method`。
+
+```typescript
+import { request } from "@/utils/request"
+
+export async function addUser(params: AddUserParams) {
+    const response = await request<User>("/user/add", { body: params })
+    return response
+}
+
+export async function deleteUser(params: DeleteUserParams) {
+    const response = await request<User>("/user/delete", {
+        method: "DELETE",
+        body: params,
+    })
+
+    return response
+}
+```
+
+## 常规接口
+
+常规资源接口通常分为 5 类。以 `User` 为例：
+
+| 类型     | 函数名       | 参数               | 返回值       | 说明                     |
+| :------- | :----------- | :----------------- | :----------- | :----------------------- |
+| 查询列表 | `queryUser`  | `QueryUserParams`  | `Page<User>` | 参数通常放在 `search` 中 |
+| 获取详情 | `getUser`    | `User["id"]`       | `User`       | 使用资源唯一标识符       |
+| 新增     | `addUser`    | `AddUserParams`    | `User`       | 参数通常放在 `body` 中   |
+| 更新     | `updateUser` | `UpdateUserParams` | `User`       | 参数通常放在 `body` 中   |
+| 删除     | `deleteUser` | `DeleteUserParams` | `User`       | 请求方法通常为 `DELETE`  |
+
+## Hook 生成
+
+- 每个 API 函数生成对应 Hook，文件放在 `@/hooks` 目录下。
+- Hook 文件名为 `use` + 函数名大驼峰形式，例如 `queryUser` 对应 `useQueryUser.ts`。
+- `queryKey` 使用 API 函数名的短横线命名，例如 `query-user`、`get-user`。
+- 查询类接口使用 `createUseQuery`。
+- 新增、更新、删除等操作类接口使用 `createUseMutation`。
+- 操作成功后，应刷新受影响的查询缓存，例如列表查询与当前详情查询。
+- 消息提示优先使用项目已有实现；如果项目没有统一提示组件，不要为了 Hook 主动引入新的 UI 库。
+
+### 查询列表
+
+```typescript
+import { createUseQuery } from "soda-tanstack-query"
+import { queryUser } from "@/apis/queryUser"
+
+export const useQueryUser = createUseQuery({
+    queryFn: queryUser,
+    queryKey: "query-user",
+})
+```
+
+### 获取详情
+
+详情接口的 Hook 应允许标识符为空；为空时返回 `null`，避免发送无效请求。
+
+```typescript
+import { isNonNullable } from "deepsea-tools"
+import { createUseQuery } from "soda-tanstack-query"
+import { getUser } from "@/apis/getUser"
+import type { User } from "@/apis/queryUser"
+
+export function getUserOptional(id?: User["id"]) {
+    return isNonNullable(id) ? getUser(id) : null
+}
+
+export const useGetUser = createUseQuery({
+    queryFn: getUserOptional,
+    queryKey: "get-user",
+})
+```
+
+### 操作接口
+
+以下示例以项目已使用 `Ant Design` 的 `message` 为前提；如果项目使用其他提示组件，应替换为项目已有实现。
+
+```typescript
+import { useId } from "react"
+
+import { message } from "antd"
+import { createUseMutation } from "soda-tanstack-query"
+import { addUser } from "@/apis/addUser"
+
+export const useAddUser = createUseMutation(() => {
+    const key = useId()
+
+    return {
+        mutationFn: addUser,
+        onMutate() {
+            message.open({
+                key,
+                type: "loading",
+                content: "新增用户中...",
+                duration: 0,
+            })
+        },
+        onSuccess(data, variables, onMutateResult, context) {
+            context.client.invalidateQueries({ queryKey: ["query-user"] })
+            context.client.invalidateQueries({ queryKey: ["get-user", data.id] })
+
+            message.open({
+                key,
+                type: "success",
+                content: "新增用户成功",
+            })
+        },
+        onError() {
+            message.destroy(key)
+        },
     }
-    ```
-
-15. 请尽可能地复用类型，比如你可能在 `addUser` 中需要使用 `User` 类型，在 `queryUser` 中已经定义了 `User` 类型，请直接使用 `User` 类型，而不是重新定义一个 `User` 类型，当然这只是比较简单的场景，有时间两个文件名关联都不一定很大，请灵活处理，枚举类型也是如此。
-16. 当你完成 api 函数的代码后，请在 `@/hooks` 目录下生成一个相应的 hook 函数，它的文件名为 use + 函数名(首字母大写)，api 函数为查询和操作两种类型，生成的 hook 函数也有两种类型：
-    - `query` 函数
-
-        ```typescript
-        import { createUseQuery } from "soda-tanstack-query"
-        import { queryUser } from "@/apis/queryUser"
-
-        export const useQueryUser = createUseQuery({
-            queryFn: queryUser,
-            // 这里的 key 为 api 函数的烤肉串命名
-            queryKey: "query-user",
-        })
-        ```
-
-    - `get` 函数
-
-        ```typescript
-        import { isNonNullable } from "deepsea-tools"
-        import { createUseQuery } from "soda-tanstack-query"
-        import { getUser } from "@/apis/getUser"
-
-        export function getUserOptional(id?: string | undefined) {
-            return isNonNullable(id) ? getUser(id) : null
-        }
-
-        export const useGetUser = createUseQuery({
-            queryFn: getUserOptional,
-            queryKey: "get-user",
-        })
-        ```
-
-    - `add`、`update`、`delete` 等等操作函数
-
-        ```typescript
-        import { useMutation, UseMutationOptions } from "@tanstack/react-query"
-        import { addUser } from "@/apis/addUser"
-
-        export const useAddUser = createUseMutation(() => {
-            const key = useId()
-
-            return {
-                mutationFn: addUser,
-                onMutate(variables, context) {
-                    message.open({
-                        key,
-                        type: "loading",
-                        content: "新增用户中...",
-                        duration: 0,
-                    })
-                },
-                onSuccess(data, variables, onMutateResult, context) {
-                    // 成功后刷新 user 相关的 query
-                    context.client.invalidateQueries({ queryKey: ["query-user"] })
-
-                    context.client.invalidateQueries({ queryKey: ["get-user", data.id] })
-
-                    message.open({
-                        key,
-                        type: "success",
-                        content: "新增用户成功",
-                    })
-                },
-                onError(error, variables, onMutateResult, context) {
-                    // 失败后关闭 loading
-                    message.destroy(key)
-                },
-            }
-        })
-        ```
+})
+```

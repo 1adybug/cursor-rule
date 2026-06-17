@@ -1,14 +1,69 @@
 # Style Rules
 
-- 页面的 CSS 样式你应该尽量通过以下两种方式实现：
-    1. 对于 `Ant Design` 或者 `@heroui/react` 等组件库提供的组件，请在组件库提供的 `ConfigProvider` 等类似的全局配置组件进行修改，如果你需要修改某个组件的全局样式，你可以在 `@/components/Registry.tsx` 中进行修改，它包裹了整个应用，如果你只需要单独修改某个位置的某个组件，请使用 `ConfigProvider` 包裹你需要修改的组件
-    2. 对于一般样式，优先使用组件的 `className` 或者 `classNames` 或其他类名属性 + `tailwindcss` 实现
-    3. 有且仅有以上两种方式无法实现时，请你使用 `style` 属性或者在 css 文件中定义样式
+## 基本原则
 
-- 当你使用 `flex` 布局时，对于宽度或者高度需要保持固定的子元素设置 `flex-none`
-- 对于 `React` 组件（也就是非 `div` 等 `html` 元素）的样式，请谨慎使用 `!important` 修改样式，请优先使用 `ConfigProvider` 或者组件暴露的属性（比如 `radius` / `shape`等）修改样式，最后再考虑使用 `!important`
-- 请不要使用模板字符串的形式来实现动态样式，例如 ``className={`w-${width}px`}``，如果你想要实现条件类名，请使用 `deepsea-tools` 中导出的 `clsx` 函数，比如 `clsx("text-base", isPrimary ? "text-primary" : "text-secondary")`
+- 样式修改应优先使用项目现有设计系统、组件库能力和 `tailwindcss` 工具类。
+- 不要为了局部样式引入新的样式体系、组件库主题方案或全局覆盖规则。
+- 修改样式前，先判断目标是组件库主题、单个组件实例，还是普通 DOM 布局；不同目标使用不同方式处理。
+- 优先保持现有 UI 风格与交互一致，避免为了实现局部样式引入额外视觉变化。
 
-- 如果某个容器在不同状态下有时会出现纵向滚动条，有时不会，导致右侧按钮或内容边界横向抖动。请用 `CSS` 动态 `padding` 解决，不要硬编码滚动条宽度。做法是：先确定内容区域在没有滚动条时的理论宽度，例如整个窗口宽度减去左侧固定侧边栏宽度：`calc(100vw - 84px)`。然后设置左侧 `padding` 为基础值，比如 `28px`；右侧 `padding` 设置为基础值减去“理论宽度和当前容器实际宽度的差值”： `padding-left: 28px; padding-right: calc(28px - ((100vw - 84px) - 100%));` 其中 `100%` 是当前内容容器实际可用宽度。没有滚动条时差值为 `0`；有滚动条时差值等于滚动条占用宽度，从而自动抵消滚动条造成的横向偏移。响应式场景下，如果侧边栏宽度或基础 `padding` 改变，也要在对应断点同步更新这个公式。
+## 实现优先级
 
-- 对于 `Ant Design` 中的按钮，尽量使用 `color` + `variant` 的组合来实现不通样式，对于 `color` 不是 `default` 的按钮，`variant` 尽量不要使用 `outlined`
+样式实现按以下顺序选择：
+
+1. 组件库提供的主题、属性、插槽、`className`、`classNames` 或类似配置。
+2. `className`、`classNames` 或其他类名属性配合 `tailwindcss`。
+3. 组件附近已有的 CSS 文件、CSS Module 或项目约定的样式文件。
+4. `style` 属性、CSS 变量或新的 CSS 规则。
+5. `!important`。
+
+只有前一种方式无法清晰实现时，才使用后一种方式。
+
+## 组件库样式
+
+- 对于 `Ant Design`、`@heroui/react` 等组件库组件，优先使用组件库提供的属性或主题能力修改样式。
+- 如果需要修改组件库的全局样式，在 `@/components/Registry.tsx` 中通过 `ConfigProvider` 或类似全局配置组件处理。
+- 如果只需要修改某个局部区域的组件样式，使用局部 `ConfigProvider` 包裹目标组件。
+- 对于 `React` 组件，也就是非 `div` 等 HTML 元素，谨慎使用 `!important` 覆盖样式；优先使用组件暴露的属性，例如 `radius`、`shape`、`variant`、`color` 等。
+- 对于 `Ant Design` 的按钮，优先使用 `color` + `variant` 组合实现不同样式；当 `color` 不是 `default` 时，`variant` 尽量不要使用 `outlined`。
+
+## Tailwind 与动态样式
+
+- 普通布局与视觉样式优先使用 `tailwindcss` 工具类。
+- 条件类名使用 `deepsea-tools` 中的 `clsx`。
+- 不要使用模板字符串拼接动态 Tailwind 类名，例如 ``className={`w-${width}px`}``。
+- 有限状态的动态样式，应枚举为稳定类名后再用 `clsx` 选择。
+- 真正运行时才知道的尺寸、坐标、颜色等值，可以使用 `style` 属性或 CSS 变量承载。
+
+```tsx
+const sizeClassName = isLarge ? "h-12 px-4" : "h-8 px-3"
+
+return <div className={clsx("text-base", sizeClassName, className)} />
+```
+
+## 布局稳定性
+
+- 使用 `flex` 布局时，宽度或高度必须保持固定的子元素应设置 `flex-none`。
+- 列表、工具栏、按钮组、表格操作列等区域应避免因为内容变化发生明显横向抖动。
+- 如果内容可能溢出，优先通过 `min-w-0`、`truncate`、`overflow-hidden`、`shrink`、`flex-none` 等工具类明确伸缩行为。
+
+## 滚动条抖动
+
+如果容器在不同状态下有时出现纵向滚动条、有时不出现，导致右侧按钮或内容边界横向抖动，应使用 CSS 动态 `padding` 抵消滚动条宽度，不要硬编码滚动条宽度。
+
+处理步骤：
+
+1. 确定内容区域在没有滚动条时的理论宽度，例如窗口宽度减去左侧固定侧边栏宽度：`calc(100vw - 84px)`。
+2. 设置左侧 `padding` 为基础值，例如 `28px`。
+3. 右侧 `padding` 设置为基础值减去“理论宽度和当前容器实际宽度的差值”。
+
+```css
+.content {
+    padding-left: 28px;
+    padding-right: calc(28px - ((100vw - 84px) - 100%));
+}
+```
+
+其中 `100%` 是当前内容容器实际可用宽度。没有滚动条时差值为 `0`；有滚动条时差值等于滚动条占用宽度，从而抵消横向偏移。
+
+响应式场景下，如果侧边栏宽度或基础 `padding` 改变，也要在对应断点同步更新公式。
