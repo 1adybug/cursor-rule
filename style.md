@@ -11,10 +11,10 @@
 
 样式实现按以下顺序选择：
 
-1. 组件库提供的主题、属性、插槽、`className`、`classNames` 或类似配置。
-2. `className`、`classNames` 或其他类名属性配合 `tailwindcss`。
+1. 组件库提供的主题、设计令牌、CSS 变量、属性、插槽或类似配置。
+2. `className`、`classNames` 或其他类名入口配合 `tailwindcss`。
 3. 组件附近已有的 CSS 文件、CSS Module 或项目约定的样式文件。
-4. `style` 属性、CSS 变量或新的 CSS 规则。
+4. 用于运行时动态值的 `style` 属性，或确有必要时新增的局部 CSS 规则。
 5. `!important`。
 
 只有前一种方式无法清晰实现时，才使用后一种方式。
@@ -45,25 +45,17 @@ return <div className={clsx("text-base", sizeClassName, className)} />
 
 - 使用 `flex` 布局时，宽度或高度必须保持固定的子元素应设置 `flex-none`。
 - 列表、工具栏、按钮组、表格操作列等区域应避免因为内容变化发生明显横向抖动。
-- 如果内容可能溢出，优先通过 `min-w-0`、`truncate`、`overflow-hidden`、`shrink`、`flex-none` 等工具类明确伸缩行为。
+- 如果内容可能溢出，优先通过 `min-w-0`、`truncate`、`overflow-hidden`、`shrink-0`、`flex-none` 等工具类明确伸缩行为，并根据目标选择是否允许元素伸缩。
 
 ## 滚动条抖动
 
-如果容器在不同状态下有时出现纵向滚动条、有时不出现，导致右侧按钮或内容边界横向抖动，应使用 CSS 动态 `padding` 抵消滚动条宽度，不要硬编码滚动条宽度。
-
-处理步骤：
-
-1. 确定内容区域在没有滚动条时的理论宽度，例如窗口宽度减去左侧固定侧边栏宽度：`calc(100vw - 84px)`。
-2. 设置左侧 `padding` 为基础值，例如 `28px`。
-3. 右侧 `padding` 设置为基础值减去“理论宽度和当前容器实际宽度的差值”。
+如果容器在不同状态下有时出现纵向滚动条、有时不出现，导致内容边界横向抖动，优先在实际滚动容器上使用 `scrollbar-gutter: stable` 预留滚动条空间。
 
 ```css
 .content {
-    padding-left: 28px;
-    padding-right: calc(28px - ((100vw - 84px) - 100%));
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 ```
 
-其中 `100%` 是当前内容容器实际可用宽度。没有滚动条时差值为 `0`；有滚动条时差值等于滚动条占用宽度，从而抵消横向偏移。
-
-响应式场景下，如果侧边栏宽度或基础 `padding` 改变，也要在对应断点同步更新公式。
+如果布局需要在滚动容器两侧保持对称留白，可以使用 `scrollbar-gutter: stable both-edges`。只有目标浏览器不支持该属性时，才考虑始终显示滚动条或通过局部测量实现兼容方案；不要依赖视口宽度、侧边栏宽度或硬编码滚动条宽度计算补偿值。

@@ -40,7 +40,7 @@ export const addUserSchema = z.object(
         phone: phoneSchema,
         role: roleSchema,
     },
-    { message: "无效的用户参数" },
+    { error: "无效的用户参数" },
 )
 
 export type AddUserParams = z.infer<typeof addUserSchema>
@@ -157,6 +157,7 @@ export const useAddUser = createUseAddUser(addUserClient)
 ## Schema 设计
 
 - `schema` 文件放在 `@/schemas` 目录下。
+- 当前示例使用 `Zod 4`，自定义错误信息使用 `error` 参数，不使用已弃用的 `message` 参数。
 - 组合型对象或数组字段应尽量独立成文件，便于复用，不要直接堆在业务 schema 中。
 - 字段级 schema 的命名使用字段名加 `Schema` 后缀，例如 `usernameSchema`。
 - 参数类型使用 schema 名称对应的大驼峰形式加 `Params` 后缀，例如 `AddUserParams`。
@@ -167,9 +168,9 @@ export const useAddUser = createUseAddUser(addUserClient)
 ```typescript
 export const addUserSchema = z.object(
     {
-        username: z.string({ message: "无效的用户名" }),
+        username: z.string({ error: "无效的用户名" }),
     },
-    { message: "无效的用户参数" },
+    { error: "无效的用户参数" },
 )
 ```
 
@@ -180,11 +181,11 @@ import { getParser } from "."
 import { z } from "zod"
 
 export const usernameSchema = z
-    .string({ message: "无效的用户名" })
-    .min(4, { message: "用户名长度不能低于 4 位" })
-    .max(16, { message: "用户名长度不能超过 16 位" })
-    .regex(/^[a-zA-Z0-9_]+$/, { message: "用户名只能包含字母、数字和下划线" })
-    .regex(/^[a-zA-Z]/, { message: "用户名必须以字母开头" })
+    .string({ error: "无效的用户名" })
+    .min(4, { error: "用户名长度不能低于 4 位" })
+    .max(16, { error: "用户名长度不能超过 16 位" })
+    .regex(/^[a-zA-Z0-9_]+$/, { error: "用户名只能包含字母、数字和下划线" })
+    .regex(/^[a-zA-Z]/, { error: "用户名必须以字母开头" })
 
 export type UsernameParams = z.infer<typeof usernameSchema>
 
