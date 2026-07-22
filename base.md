@@ -56,6 +56,7 @@ export type Gender = (typeof Gender)[keyof typeof Gender]
 
 - 创建 `git` 提交记录时，必须使用 `type: 具体内容` 格式：
 - 在 monorepo 中，必须使用 `type(package): 具体内容` 格式：
+- 修改使用 Changesets 管理版本的 monorepo 时，不得自行新增 changeset 文件；仅在用户明确要求时添加。
 
 ## 问题修复
 
