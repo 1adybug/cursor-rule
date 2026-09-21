@@ -1,91 +1,33 @@
 # Next Rules
 
-针对 `Next.js` 16 项目。需要确认框架行为时，优先查看项目内文档：`node_modules/next/dist/docs/`。
+适用于 Next.js 应用内部的服务端能力，通用执行原则见 Base Rules。先确认实际 Next.js、React 和 Zod 版本；需要框架资料时优先查已安装版本的 `node_modules/next/dist/docs/`，不存在或不完整再查对应版本官方文档。
 
-## 基本原则
+## 业务边界
 
-- 业务逻辑优先放在 `@/shared`，`Server Action` 只作为薄封装。
-- 所有来自客户端或外部请求的参数都必须先经过 `schema` 校验。
-- `"use server"` 只放在 `@/actions` 等真正声明 `Server Action` 的文件中，不要放在普通业务函数里。
-- 客户端调用服务端能力时，优先走 `shared -> actions -> presets -> hooks` 链路。
-- 如果需要同时暴露 `Server Action` 与 `API Route`，优先通过 `createSharedFn` 的 `route` 配置复用同一份 `shared` 逻辑。
+- 已采用本项目分层的应用，业务逻辑放在 `@/shared`，`Server Action` 和 Route 作为薄适配层；`shared` 表示业务复用，不代表可以把服务端逻辑打包到浏览器。
+- 来自客户端或外部请求的参数在服务端边界经过 schema 校验；在执行受保护操作前验证身份、权限和资源归属，不能依赖客户端隐藏按钮或先前页面检查。
+- `"use server"` 用于声明 Server Action，不用于标记普通服务端模块。普通业务逻辑放在明确的服务端边界内，沿用项目的 `server-only` 等导入保护。
+- `@/utils` 仅放浏览器可用或两端通用工具；鉴权、数据库、密钥和服务端专用工具放在 `@/server` 等服务端目录。客户端不能导入服务端实现，允许调用框架提供的 Action 代理或导入纯类型。
+- 检查客户端所需字段后返回最小数据，不向客户端暴露密钥、内部错误或无关敏感字段。
 
-## Server Action 工作流
+## 文件职责
 
-创建一个 `Server Action` 时，以 `addUser` 为例，按以下顺序生成文件：
+以下为已有 `createSharedFn` 体系中的职责映射，不是每次都要新建五个文件的步骤表。复用已有文件，只有实际调用链需要时才新增对应层。
 
-| 步骤 | 文件                            | 职责                            |
-| :--- | :------------------------------ | :------------------------------ |
-| 1    | `@/schemas/addUser.ts`          | 声明参数校验、参数类型与 parser |
-| 2    | `@/shared/addUser.ts`           | 实现服务端业务逻辑              |
-| 3    | `@/actions/addUser.ts`          | 声明 `"use server"` 并包装响应  |
-| 4    | `@/presets/createUseAddUser.ts` | 声明 mutation 默认行为          |
-| 5    | `@/hooks/useAddUser.ts`         | 生成客户端 Hook                 |
+| 位置                            | 职责                                                                       |
+| :------------------------------ | :------------------------------------------------------------------------- |
+| `@/schemas/addUser.ts`          | 参数 schema、`AddUserParams` 与 `addUserParser`                            |
+| `@/shared/addUser.ts`           | 使用 `createSharedFn` 实现服务端业务与权限约束                             |
+| `@/actions/addUser.ts`          | 以 `"use server"` 和 `createResponseFn` 导出 `addUserAction`               |
+| `@/presets/createUseAddUser.ts` | 需要客户端 mutation 默认行为时定义提示、缓存刷新与副作用                   |
+| `@/hooks/useAddUser.ts`         | 通过 `createRequestFn` 生成 `addUserClient`，套用 preset 导出 `useAddUser` |
 
-### Schema
+- 未采用这套封装的项目沿用现有架构，不为应用规则复制整套基础设施。
+- 使用 `createSharedFn` 时传入 `schema`，权限约束沿用 `filter` 或现有服务端鉴权机制；确认 Action 与 Route 均经过这些约束。
+- 数据唯一性、并发写入等不变量由数据库约束或事务保证；“先查再写”只能改善提示，不能作为并发正确性的唯一保证。
+- 对客户端可见的预期业务错误使用项目的 `ClientError` 或等价机制；不要把所有异常转成成功结果或暴露原始数据库错误。
 
-```typescript
-import { getParser } from "."
-import { z } from "zod"
-
-import { phoneSchema } from "./phone"
-
-import { roleSchema } from "./role"
-
-import { usernameSchema } from "./username"
-
-export const addUserSchema = z.object(
-    {
-        username: usernameSchema,
-        phone: phoneSchema,
-        role: roleSchema,
-    },
-    { error: "无效的用户参数" },
-)
-
-export type AddUserParams = z.infer<typeof addUserSchema>
-
-export const addUserParser = getParser(addUserSchema)
-```
-
-### Shared
-
-- `shared` 文件不写 `"use server"`。
-- `schema` 必须传给 `createSharedFn`。
-- 如果需要权限控制，使用 `filter`。
-- 如果需要暴露为 `API Route`，使用 `route`；`bodyType` 必须和实际请求体类型一致。
-- 函数内部需要向客户端暴露错误时，使用 `ClientError`。
-
-```typescript
-import { prisma } from "@/prisma"
-import { type AddUserParams, addUserSchema } from "@/schemas/addUser"
-import { createSharedFn } from "@/server/createSharedFn"
-import { isAdmin } from "@/server/isAdmin"
-import { ClientError } from "@/utils/clientError"
-
-export const addUser = createSharedFn({
-    name: "addUser",
-    schema: addUserSchema,
-    filter: isAdmin,
-    route: {
-        pathname: "/users",
-        bodyType: "json",
-    },
-})(async function addUser(params: AddUserParams) {
-    const count = await prisma.user.count({ where: { username: params.username } })
-
-    if (count > 0) throw new ClientError("用户名已存在")
-
-    const user = await prisma.user.create({ data: params })
-    return user
-})
-```
-
-### Action
-
-- `@/actions/*.ts` 文件顶部必须放 `"use server"`。
-- `Action` 文件只负责把 `shared` 函数包装为响应函数，不写业务逻辑。
-- 命名使用 `xxxAction`。
+已有封装下的 Action 保持薄封装：
 
 ```typescript
 "use server"
@@ -96,113 +38,18 @@ import { addUser } from "@/shared/addUser"
 export const addUserAction = createResponseFn(addUser)
 ```
 
-### Preset
+## Schema 与客户端状态
 
-- `preset` 文件负责声明 mutation 的默认提示、缓存刷新与副作用。
-- 消息提示优先使用项目已有实现；下面示例以项目已使用 `Ant Design` 的 `message` 为前提。
-- 成功后刷新所有受影响的 query，例如列表与详情。
+- schema 放在 `@/schemas`，命名为 `xxxSchema`，推导 `XxxParams` 并按现有约定导出 `xxxParser`；不要再手写一份可能漂移的参数类型。
+- Zod 4 自定义错误优先使用 `error` 参数；其他版本遵循已安装版本签名，不为了示例升级依赖。
+- 复用已有字段 schema；重复使用或有独立业务语义的组合对象、数组可独立成文件，一次性简单字段无需逐个拆分。
+- 客户端走项目已有的 `shared -> actions -> presets -> hooks` 链路时，沿用 mutation 状态、错误与缓存机制，不为同一次操作另建一套 React Action 状态。
+- preset 的提示和缓存刷新遵循 API Rules 中“Hook 与副作用”的约定。Next.js 服务端缓存与客户端查询缓存分别按数据流处理，不假定刷新一方会刷新另一方。
 
-```typescript
-import { useId } from "react"
+## HTTP 入口
 
-import { message } from "antd"
-import { withUseMutationDefaults } from "soda-tanstack-query"
-import type { addUser } from "@/shared/addUser"
-
-export const createUseAddUser = withUseMutationDefaults<typeof addUser>(() => {
-    const key = useId()
-
-    return {
-        onMutate() {
-            message.open({
-                key,
-                type: "loading",
-                content: "新增用户中...",
-                duration: 0,
-            })
-        },
-        onSuccess(data, variables, onMutateResult, context) {
-            context.client.invalidateQueries({ queryKey: ["query-user"] })
-            context.client.invalidateQueries({ queryKey: ["get-user", data.id] })
-
-            message.open({
-                key,
-                type: "success",
-                content: "新增用户成功",
-            })
-        },
-        onError() {
-            message.destroy(key)
-        },
-    }
-})
-```
-
-### Hook
-
-- `hook` 文件负责把 `Action` 转为客户端请求函数，并套用对应 `preset`。
-- 客户端请求函数命名为 `xxxClient`。
-- Hook 命名为 `useXxx`。
-
-```typescript
-import { createRequestFn } from "deepsea-tools"
-import { addUserAction } from "@/actions/addUser"
-import { createUseAddUser } from "@/presets/createUseAddUser"
-
-export const addUserClient = createRequestFn(addUserAction)
-
-export const useAddUser = createUseAddUser(addUserClient)
-```
-
-## Schema 设计
-
-- `schema` 文件放在 `@/schemas` 目录下。
-- 当前示例使用 `Zod 4`，自定义错误信息使用 `error` 参数，不使用已弃用的 `message` 参数。
-- 组合型对象或数组字段应尽量独立成文件，便于复用，不要直接堆在业务 schema 中。
-- 字段级 schema 的命名使用字段名加 `Schema` 后缀，例如 `usernameSchema`。
-- 参数类型使用 schema 名称对应的大驼峰形式加 `Params` 后缀，例如 `AddUserParams`。
-- 每个 schema 文件都应导出对应的 `parser`，命名为 `xxxParser`。
-
-不要把可复用字段直接写在业务 schema 里：
-
-```typescript
-export const addUserSchema = z.object(
-    {
-        username: z.string({ error: "无效的用户名" }),
-    },
-    { error: "无效的用户参数" },
-)
-```
-
-应抽取为字段级 schema：
-
-```typescript
-import { getParser } from "."
-import { z } from "zod"
-
-export const usernameSchema = z
-    .string({ error: "无效的用户名" })
-    .min(4, { error: "用户名长度不能低于 4 位" })
-    .max(16, { error: "用户名长度不能超过 16 位" })
-    .regex(/^[a-zA-Z0-9_]+$/, { error: "用户名只能包含字母、数字和下划线" })
-    .regex(/^[a-zA-Z]/, { error: "用户名必须以字母开头" })
-
-export type UsernameParams = z.infer<typeof usernameSchema>
-
-export const usernameParser = getParser(usernameSchema)
-```
-
-## Utils 与 Server
-
-- `@/utils` 目录只能放客户端可访问，或客户端与服务端都可访问的工具函数。
-- 只能在服务端访问的工具函数、鉴权逻辑、数据库逻辑、密钥相关逻辑，必须放在 `@/server` 或其他明确的服务端目录下。
-- 不要从客户端组件、客户端 Hook 或浏览器可执行代码中导入 `@/server` 文件。
-
-## API Route
-
-- 只有功能必须通过 HTTP 接口暴露时才创建 `API Route`，例如第三方调用、Webhook、文件下载或 `Server Action` 无法覆盖的场景。
-- 成功响应是 JSON 数据时，优先使用 `shared -> action/route -> preset -> hooks/apis` 链路，不要直接写独立 `route.ts`。
-- 需要创建 JSON `API Route` 时，优先给 `createSharedFn` 配置 `route`。
-- 只有成功响应不是 JSON 时，才允许直接定义独立 `route.ts`。
-- 文件下载、二进制流、图片流、上游流式透传等场景，可以保留独立 `route.ts`。
-- 即使保留独立 `route.ts`，核心业务逻辑也应尽量复用 `@/shared`。
+- 第三方调用、Webhook、下载或其他必须通过 HTTP 暴露的能力才新增 Route；内部调用不额外绕行 HTTP。
+- 标准 JSON 接口优先使用 `createSharedFn` 的 `route` 配置，`bodyType` 与真实请求体一致，复用业务逻辑和校验。
+- 当封装无法保留所需 HTTP 语义，例如原始请求体验签、自定义响应头、特殊状态码、流或二进制响应时，可以使用独立 `route.ts`，不单凭返回 JSON 就禁止使用。
+- 独立 Route 仍需完整的输入校验、鉴权与错误处理；协议适配留在入口，业务逻辑复用服务端实现。
+- 验证本次涉及的入口、权限、参数与缓存行为；Action 成功不等于同业务的 HTTP 入口已验证。
