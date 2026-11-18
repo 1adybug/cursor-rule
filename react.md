@@ -16,16 +16,16 @@
 
 - 原始业务模型通过 `data` 传入，复用对应类型，不拆成大量平铺字段；没有数据就不能合法渲染时，`data` 必填。
 - 只有确实透传属性时才继承根元素或根组件的 Props。优先复用已导出的 Props，否则使用 `ComponentProps<...>`，排除组件自行接管或不支持的属性。
-- 已使用 `deepsea-tools` 时可用 `StrictOmit`；不要为一个类型工具新增依赖。
+- 已使用 `@luzixu/tools` 时可用 `StrictOmit`；不要为一个类型工具新增依赖。
 - 在函数参数中解构使用的属性，只有可以安全透传时才收集 `...rest`。不要把业务字段泄漏给 DOM，也不要让透传属性覆盖组件必须维护的行为。
 - JSX 属性按身份、样式、数据、事件、透传组织；该顺序不得改变覆盖语义，存在同名冲突时先显式解构并组合。
 
-以下示例沿用项目已有的 `deepsea-tools` 和 `Book` 业务类型：
+以下示例沿用项目已有的 `@luzixu/tools` 和 `Book` 业务类型：
 
 ```tsx
 import type { ComponentProps, FC } from "react"
 
-import { type StrictOmit, clsx } from "deepsea-tools"
+import { type StrictOmit, clsx } from "@luzixu/tools"
 import type { Book } from "@/apis/queryBook"
 
 export interface BookCardProps extends StrictOmit<ComponentProps<"div">, "children" | "dangerouslySetInnerHTML"> {
