@@ -2,6 +2,8 @@
 
 本章节适用于所有任务。其余章节按任务适用：API Rules 用于外部 HTTP 接口，Next Rules 用于应用内部服务端能力，React Rules 用于组件与状态，Style Rules 用于样式，Skill Rules 用于 Skill 设计。专项规则仅在对应场景生效，不因同处一份文档就要求执行无关流程。
 
+- 涉及 HTML、CSS 或客户端 JavaScript 的前端任务，必须先使用 [@Modern Web Guidance](plugin://modern-web-guidance@openai-curated-remote) 检索并阅读相关指南，再进行技术选型或实现。交付前结合适用指南和项目的浏览器支持要求核对实现。
+
 ## 指令与执行边界
 
 - 在系统和开发者指令允许的范围内，用户明确要求与本轮已确认决策优先于这些规则和 Skill 指南；专项规则只约束适用场景，未覆盖的细节沿用项目约定。
